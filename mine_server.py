@@ -69,8 +69,8 @@ class MineServer:
         self.dig_secret, dig_commit = prove_step1(self.g)
         self.dig_secrets_sum = 0
         mine_count = 0
-        for i in range(max(i-1, 0), min(i+2, self.n-1)):
-            for j in range(max(j-1, 0), min(j+2, self.n-1)):
+        for i in range(max(i-1, 0), min(i+2, self.n)):
+            for j in range(max(j-1, 0), min(j+2, self.n)):
                 mine_count += self.grid[i][j]
                 self.dig_secrets_sum += self.commits[i][j][0]
 
