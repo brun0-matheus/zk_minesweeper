@@ -86,7 +86,9 @@ class MineServer:
         return False, (mine_count, dig_commit)
 
     def finish_dig_proof(self, challenge: int) -> int:
-        return prove_step2(challenge, self.dig_secret, self.dig_secrets_sum, self.g)
+        result = prove_step2(challenge, self.dig_secret, self.dig_secrets_sum, self.g)
+        self.dig_secret = None
+        return result
 
     def has_won(self) -> bool:
         return self.cnt_dug_mines + self.cnt_mines == self.n**2
