@@ -1,0 +1,40 @@
+[gd_scene format=3 uid="uid://c660orihqqh0o"]
+
+[ext_resource type="Script" uid="uid://bnl7s1eef35og" path="res://scenes/controller.gd" id="1_sugp2"]
+
+[node name="Control" type="Control" unique_id=557710672]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_sugp2")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1043434193]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer" unique_id=181435843]
+layout_mode = 2
+
+[node name="BtnStart" type="Button" parent="MarginContainer/PanelContainer" unique_id=1863496392]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "Start game"
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/PanelContainer" unique_id=1970239312]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="GridContainer" type="GridContainer" parent="MarginContainer/PanelContainer/MarginContainer" unique_id=670881733]
+unique_name_in_owner = true
+layout_mode = 2
+columns = 10
+
+[node name="HTTPRequest" type="HTTPRequest" parent="." unique_id=1918390617]
+unique_name_in_owner = true
