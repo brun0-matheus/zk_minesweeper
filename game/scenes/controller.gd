@@ -4,6 +4,10 @@ var GRID_SIZE = 10
 var GAME_INITIALIZED = false
 var LAST_PRESS = []
 
+var GAME_STATE = ''
+
+var BTN_PATH = "/root/Control/MarginContainer/PanelContainer/MarginContainer/HBoxContainer/MarginContainer/GridContainer/Button"
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	
@@ -37,27 +41,49 @@ func _ready() -> void:
 			
 
 
-func _post(url: String, body: String) -> Error:
+func _hpost(url: String, body: Dictionary) -> Error:
 	var headers = [
 		"Content-Type: application/json",
 	]
 	
-	return %HTTPRequest.request(url, headers, HTTPClient.METHOD_POST, body)
+	print("sent POST to ", url, body)
+	
+	return %HTTPRequest.request("http://localhost:5000/" + url, headers, HTTPClient.METHOD_POST, JSON.stringify(body))
+
+
+func _hput(url: String, body: Dictionary) -> Error:
+	var headers = [
+		"Content-Type: application/json",
+	]
+	
+	print("sent PUT to ", url, body)
+	
+	return %HTTPRequest.request("http://localhost:5000/" + url, headers, HTTPClient.METHOD_PUT, JSON.stringify(body))
+
+
+func _hget(url: String) -> Error:
+	var headers = [
+		"Content-Type: application/json",
+	]
+
+	print("sent GET to ", url)
+
+	return %HTTPRequest.request("http://localhost:5000/" + url, headers, HTTPClient.METHOD_GET, "")
 
 func _on_start_pressed():
-	print("Initializing game")
-	
-	_post("http://localhost:5000/api/setup", JSON.stringify({}))
+	GAME_INITIALIZED = false
+	%TxtConsole.clear()
+	_hpost("api/setup", {})
 
 
 func _on_btn_pressed(coords):
 	LAST_PRESS = coords
 	if GAME_INITIALIZED == false:
-		_post("http://localhost:5000/api/init", JSON.stringify({"c_x": coords[0], "c_y": coords[1]}))
+		_hpost("api/init", {"c_x": coords[0], "c_y": coords[1]})
 		return
 
 	else:
-		_post("http://localhost:5000/api/dig", JSON.stringify({"x": coords[0], "y": coords[1]}))
+		_hpost("api/dig", {"x": coords[0], "y": coords[1]})
 	
 
 func _get_color_from_mine_count(count: String) -> Color:
@@ -98,10 +124,24 @@ func _update_btn(button: Button, text: String):
 func _on_btn_input(event, coords):
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
-			var btn: Button = get_node_or_null("/root/Control/MarginContainer/PanelContainer/MarginContainer/GridContainer/Button" + str(coords[0]) + str(coords[1]))
-			btn.add_theme_stylebox_override("normal", load("uid://22knxqinbccq"))
-			btn.add_theme_stylebox_override("hover", load("uid://22knxqinbccq"))
+			var btn: Button = get_node_or_null(BTN_PATH + str(coords[0]) + str(coords[1]))
+			var btn_flag = load("uid://22knxqinbccq")
+			var btn_base = load("uid://c6ky12hstygjc")
+			
+			var style = btn.get_theme_stylebox("normal")
+			if style == btn_flag:
+				btn.add_theme_stylebox_override("normal", btn_base)
+				btn.add_theme_stylebox_override("hover", btn_base)
+			else:
+				btn.add_theme_stylebox_override("normal", load("uid://22knxqinbccq"))
+				btn.add_theme_stylebox_override("hover", load("uid://22knxqinbccq"))
 
+
+func _append_console(txt: String):
+	var lines = %TxtConsole.get_line_count()
+	var idx = lines - 1
+	%TxtConsole.insert_line_at(idx, txt)
+	%TxtConsole.set_line_as_first_visible(idx)
 
 func _on_request_completed(result, response_code, headers, body):
 	print(headers)
@@ -109,18 +149,117 @@ func _on_request_completed(result, response_code, headers, body):
 	print(json)
 	
 	if "game_state" in json:
-		if json["game_state"] == "setup":
-			GAME_INITIALIZED = false
-		if json["game_state"] == "init":
-			GAME_INITIALIZED = true
+		var gs = json['game_state']
+		match gs:
+			"setup":
+				print("game is setup")
+				_append_console("[SERVER] setup game")
+			"init":
+				_append_console("[SERVER] initialized game")
+				await get_tree().create_timer(.25).timeout
+				_append_console("[CLIENT] requested challenge for game creation")
+				await get_tree().create_timer(.25).timeout
+				_hget("api/create_game")
+			"challenge_create_game":
+				var challenge = json['data']['challenge']
+				_append_console("[CLIENT] generated challenge: ")
+				_append_console(challenge)
+				await get_tree().create_timer(.25).timeout
+				_append_console("[CLIENT] requesting server response")
+				await get_tree().create_timer(.25).timeout
+				_hpost("api/create_game", {"challenge": challenge})
+			"challenge_create_game_reply":
+				var challenge = json['data']['challenge']
+				var response = json['data']['response']
+				_append_console("[SERVER] received response from server: ")
+				_append_console(response)
+				await get_tree().create_timer(.125).timeout
+				_hput("api/create_game", {"challenge": challenge, "response": response})
+			"challenge_create_game_verified":
+				var verified = bool(json['data']['verified'])
+				var mine_count = int(json['data']['mine_count'])
+				
+				_append_console("[CLIENT] verified game settings. mine count: " + str(mine_count))
+				_append_console("[CLIENT] requesting game permutation from server")
+				
+				_hpost("api/permute", {})
+			"ready":
+				var num_commits = int(json['data']['permutation_length'])
+				_append_console("[CLIENT] received number of commitments: " + str(num_commits))
+				GAME_INITIALIZED = true
+			"dig_mine":
+				var is_mine = bool(json['data']['mine'])
+				var x = int(json['data']['x'])
+				var y = int(json['data']['y'])
+				var secret = json['data']['secret']
+				
+				_append_console("[SERVER] revealed commitment at (%d,%d), found mine" % [x, y])
+				await get_tree().create_timer(.125).timeout
+				_append_console("[CLIENT] verifying info from server")
+				await get_tree().create_timer(.125).timeout
+				
+				_hput("api/dig", {"secret": secret, "is_mine": is_mine, "x": x, "y": y})
+			"dig_mine_verified":
+				var verified = bool(json['data']['verified'])
+				var x = int(json['data']['x'])
+				var y = int(json['data']['y'])
+				
+				var btn: Button = get_node_or_null(BTN_PATH + str(x) + str(y))
+				
+				_append_console("[CLIENT] verified information")
+				
+				var btn_mine = load("uid://cr55skwv5xqgr")
+				
+				btn.add_theme_stylebox_override("normal", btn_mine)
+				btn.add_theme_stylebox_override("pressed", btn_mine)
+				btn.add_theme_stylebox_override("disabled", btn_mine)
+				btn.add_theme_stylebox_override("hover", btn_mine)
+			"dig_challenge":
+				var x = int(json['data']['x'])
+				var y = int(json['data']['y'])
+				var cnt = int(json['data']['mine_count'])
+				var challenge = json['data']['challenge']
+				
+				_append_console("[SERVER] cell at (%d,%d) has %d neighboring mines" % [x, y, cnt])
+				await get_tree().create_timer(.125).timeout
+				_append_console("[CLIENT] requesting response from server with challenge")
+				_append_console(challenge)
+				
+				await get_tree().create_timer(.125).timeout
+				
+				_hput("api/dig", {"challenge": challenge, "is_mine": false, "x": x, "y": y})
+			"dig_challenge_reply":
+				var challenge = json['data']['challenge']
+				var response = json['data']['response']
+				
+				_append_console("[SERVER] response for client challenge is")
+				_append_console(response)
+				await get_tree().create_timer(.125).timeout
+				_append_console("[CLIENT] verifying server response")
+				
+				await get_tree().create_timer(.125).timeout
+				
+				_hpost("api/verify_dig", {"challenge": challenge, "response": response})
+			"dig_challenge_verified":
+				var verified = bool(json['data']['verified'])
+				var x = int(json['data']['x'])
+				var y = int(json['data']['y'])
+				var cnt = int(json['data']['mine_count'])
+				
+				_append_console("[CLIENT] verified response from server")
+				
+				var btn: Button = get_node_or_null(BTN_PATH + str(x) + str(y))
+				_update_btn(btn, str(cnt))
+			_:
+				pass
 	
-	if "data" in json:
-		if "mine_count" in json['data']:
-			var btn: Button = get_node_or_null("/root/Control/MarginContainer/PanelContainer/MarginContainer/GridContainer/Button" + str(LAST_PRESS[0]) + str(LAST_PRESS[1]))
-			_update_btn(btn, str(int(json['data']['mine_count'])))
-		elif "is_mine" in json['data']:
-			var btn: Button = get_node_or_null("/root/Control/MarginContainer/PanelContainer/MarginContainer/GridContainer/Button" + str(LAST_PRESS[0]) + str(LAST_PRESS[1]))
-			_update_btn(btn, "B")
+	#if "data" in json:
+	#	if "mine_count" in json['data']:
+	#		var btn: Button = get_node_or_null("/root/Control/MarginContainer/PanelContainer/MarginContainer/GridContainer/Button" + str(LAST_PRESS[0]) + str(LAST_PRESS[1]))
+	#		_update_btn(btn, str(int(json['data']['mine_count'])))
+	#	elif "is_mine" in json['data']:
+	#		var btn: Button = get_node_or_null("/root/Control/MarginContainer/PanelContainer/MarginContainer/GridContainer/Button" + str(LAST_PRESS[0]) + str(LAST_PRESS[1]))
+	#		_update_btn(btn, "B")
 			
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
