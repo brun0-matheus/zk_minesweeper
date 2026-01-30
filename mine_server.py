@@ -15,6 +15,10 @@ class MineServer:
         self.death_count = 0
         self.dig_secret = None
 
+        n = self.n
+        g = self.g
+        h = self.h
+
         self.dug_mines = [[False]*n for _ in range(n)]
         self.cnt_dug_mines = 0
         for i in range(max(0, ini_click[0]-1), min(n, ini_click[0]+2)):
@@ -37,7 +41,8 @@ class MineServer:
 
     def finish_proof_total_mine_count(self, challenge: int) -> int:
         sum_commits = sum((c for _, c in self.ini_secs_commits), start=0*self.g)
-        return prove_step2(challenge, self.secret_total_mine, sum_commits, self.g)
+        sum_secrets = sum((s for s, _ in self.ini_secs_commits))
+        return prove_step2(challenge, self.secret_total_mine, sum_secrets, self.g)
 
     def finish_game_creation(self, permutation: List[int]) -> None:
         self.ini_secs_commits = apply_permutation(self.ini_secs_commits, permutation)
@@ -69,10 +74,10 @@ class MineServer:
         self.dig_secret, dig_commit = prove_step1(self.g)
         self.dig_secrets_sum = 0
         mine_count = 0
-        for i in range(max(i-1, 0), min(i+2, self.n)):
-            for j in range(max(j-1, 0), min(j+2, self.n)):
-                mine_count += self.grid[i][j]
-                self.dig_secrets_sum += self.commits[i][j][0]
+        for x in range(max(i-1, 0), min(i+2, self.n)):
+            for y in range(max(j-1, 0), min(j+2, self.n)):
+                mine_count += self.grid[x][y]
+                self.dig_secrets_sum += self.commits[x][y][0]
 
         if not self.dug_mines[i][j]:
             self.dug_mines[i][j] = 1
@@ -81,7 +86,9 @@ class MineServer:
         return False, (mine_count, dig_commit)
 
     def finish_dig_proof(self, challenge: int) -> int:
-        return prove_step2(challenge, self.dig_secret, self.dig_secrets_sum, self.g)
+        result = prove_step2(challenge, self.dig_secret, self.dig_secrets_sum, self.g)
+        self.dig_secret = None
+        return result
 
     def has_won(self) -> bool:
         return self.cnt_dug_mines + self.cnt_mines == self.n**2

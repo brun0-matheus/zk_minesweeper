@@ -38,15 +38,15 @@ def random_point_from_log(g: Point) -> Tuple[int, Point]:
 def schnorr_commit(g: Point) -> Tuple[int, Point]:
     return random_point_from_log(g)
 
-# TODO: implement
-def schnorr_challenge() -> int:
-    ...
+def schnorr_challenge(g: Point) -> int:
+    return secrets.randbelow(g.curve.q)
 
 def schnorr_prove(challenge: int, commit_dlog: int, private_key: int, g: Point) -> int:
     # returns dlog(COMMIT + challenge*PUBLIC_KEY)
     return (commit_dlog + challenge*private_key) % g.curve.q
 
-# TODO: implement
-def schnorr_verify(challenge: int, commit: Point, public_key: Point) -> bool:
-    ...
+def schnorr_verify(challenge: int, response: int, commit: Point, public_key: Point, g: Point) -> bool:
+    left_side = g * response
+    right_side = commit + challenge * public_key
+    return left_side == right_side
 

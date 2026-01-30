@@ -1,0 +1,72 @@
+[gd_scene format=3 uid="uid://c660orihqqh0o"]
+
+[ext_resource type="Script" uid="uid://bnl7s1eef35og" path="res://scenes/controller.gd" id="1_sugp2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_o5qli"]
+bg_color = Color(0.5409904, 0.54099053, 0.5409904, 0.5529412)
+
+[node name="Control" type="Control" unique_id=557710672]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_sugp2")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1043434193]
+layout_mode = 0
+offset_right = 1152.0
+offset_bottom = 648.0
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer" unique_id=181435843]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_o5qli")
+
+[node name="BtnStart" type="Button" parent="MarginContainer/PanelContainer" unique_id=1863496392]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+text = "Start game"
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/PanelContainer" unique_id=1970239312]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/PanelContainer/MarginContainer" unique_id=144154711]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer" unique_id=1102919983]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="GridContainer" type="GridContainer" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer/MarginContainer" unique_id=670881733]
+unique_name_in_owner = true
+layout_mode = 2
+columns = 10
+
+[node name="TxtConsole" type="TextEdit" parent="MarginContainer/PanelContainer/MarginContainer/HBoxContainer" unique_id=779284866]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(650, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_readonly_color = Color(1, 1, 1, 1)
+editable = false
+context_menu_enabled = false
+emoji_menu_enabled = false
+shortcut_keys_enabled = false
+drag_and_drop_selection_enabled = false
+middle_mouse_paste_enabled = false
+wrap_mode = 1
+tab_input_mode = false
+virtual_keyboard_enabled = false
+scroll_smooth = true
+
+[node name="HTTPRequest" type="HTTPRequest" parent="." unique_id=1918390617]
+unique_name_in_owner = true

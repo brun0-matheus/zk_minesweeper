@@ -1,0 +1,6 @@
+[gd_resource type="StyleBoxTexture" format=3 uid="uid://22knxqinbccq"]
+
+[ext_resource type="Texture2D" uid="uid://dw5342ahvpsog" path="res://assets/btn_flag.png" id="1_w5git"]
+
+[resource]
+texture = ExtResource("1_w5git")
